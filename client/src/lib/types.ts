@@ -8,8 +8,10 @@ export interface Requirement {
 export interface TestCase {
   id: string;
   description: string;
+  precondition: string;
   type: "positive" | "negative" | "edge_case" | "performance";
   expectedResult: string;
+  priority: "high" | "medium" | "low";
   requirement: string;
 }
 

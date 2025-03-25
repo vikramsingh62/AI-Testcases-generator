@@ -163,16 +163,16 @@ export async function generateCSV(
   testCases: TestCase[]
 ): Promise<string> {
   // Create CSV headers
-  let csv = 'Type,ID,Description,TestType,ExpectedResult,RequirementID\n';
+  let csv = 'Type,ID,Description,Precondition,TestType,ExpectedResult,Priority,RequirementID\n';
   
   // Add requirements
   requirements.forEach(req => {
-    csv += `Requirement,${req.id},"${escapeCSV(req.text)}",,,\n`;
+    csv += `Requirement,${req.id},"${escapeCSV(req.text)}",,,,\n`;
   });
   
   // Add test cases
   testCases.forEach(testCase => {
-    csv += `TestCase,${testCase.id},"${escapeCSV(testCase.description)}",${testCase.type},"${escapeCSV(testCase.expectedResult)}",${testCase.requirement}\n`;
+    csv += `TestCase,${testCase.id},"${escapeCSV(testCase.description)}","${escapeCSV(testCase.precondition || '')}",${testCase.type},"${escapeCSV(testCase.expectedResult)}",${testCase.priority || 'medium'},${testCase.requirement}\n`;
   });
   
   return csv;
