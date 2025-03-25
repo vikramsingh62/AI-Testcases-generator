@@ -84,8 +84,15 @@ export async function generateTestCases(
   options: GenerationOptions
 ): Promise<TestCase[]> {
   try {
+    // Check if API key is available, if not use sample data
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+      console.log("Missing Gemini API key - Using demonstration content for development");
+      return generateSampleTestCases(requirements, options);
+    }
+    
     const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Update to use the correct model version
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     
     // Format the requirements as a numbered list for the prompt
     const formattedRequirements = requirements

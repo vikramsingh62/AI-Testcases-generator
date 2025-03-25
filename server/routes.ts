@@ -65,6 +65,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the text input
       const requirements = await processTextInput(text);
       
+      if (!requirements || requirements.length === 0) {
+        return res.status(400).json({ error: 'No requirements could be extracted from the text' });
+      }
+      
       // Generate test cases using Gemini API
       const testCases = await generateTestCases(requirements, validatedOptions);
       
@@ -74,7 +78,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Invalid input format', details: error.format() });
       }
-      return res.status(500).json({ error: 'Failed to process text input' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process text input';
+      return res.status(500).json({ error: errorMessage });
     }
   });
 
@@ -90,6 +95,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the uploaded file
       const requirements = await processFileUpload(req.file);
       
+      if (!requirements || requirements.length === 0) {
+        return res.status(400).json({ error: 'No requirements could be extracted from the file' });
+      }
+      
       // Generate test cases using Gemini API
       const testCases = await generateTestCases(requirements, options);
       
@@ -99,7 +108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Invalid options format', details: error.format() });
       }
-      return res.status(500).json({ error: 'Failed to process file upload' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process file upload';
+      return res.status(500).json({ error: errorMessage });
     }
   });
 
@@ -117,6 +127,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the Google Doc
       const requirements = await processGoogleDoc(docUrl);
       
+      if (!requirements || requirements.length === 0) {
+        return res.status(400).json({ error: 'No requirements could be extracted from the Google Doc' });
+      }
+      
       // Generate test cases using Gemini API
       const testCases = await generateTestCases(requirements, validatedOptions);
       
@@ -126,7 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Invalid input format', details: error.format() });
       }
-      return res.status(500).json({ error: 'Failed to process Google Doc' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process Google Doc';
+      return res.status(500).json({ error: errorMessage });
     }
   });
 
