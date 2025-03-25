@@ -141,22 +141,39 @@ Return test cases as a JSON array of test case objects.
     // Extract the JSON array from the text
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      throw new Error("Failed to parse test cases from Gemini response");
+      console.warn("Failed to match JSON array in Gemini response, using fallback generation");
+      return generateSampleTestCases(requirements, options);
     }
     
-    // Parse the JSON array
-    const testCases: TestCase[] = JSON.parse(jsonMatch[0]);
-    
-    // Validate and clean up the test cases
-    return testCases.map(testCase => ({
-      id: testCase.id,
-      description: testCase.description,
-      precondition: testCase.precondition || "System is properly configured",
-      type: testCase.type,
-      expectedResult: testCase.expectedResult,
-      priority: testCase.priority || "medium",
-      requirement: testCase.requirement
-    }));
+    try {
+      // Try to parse the JSON array
+      const jsonText = jsonMatch[0];
+      
+      // Additional cleaning to handle common JSON errors
+      // Remove trailing commas
+      const cleanedJson = jsonText
+        .replace(/,\s*\}/g, '}')  // Remove trailing commas in objects
+        .replace(/,\s*\]/g, ']')  // Remove trailing commas in arrays
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":') // Ensure property names are double-quoted
+        .replace(/:\s*'([^']*)'/g, ':"$1"'); // Replace single quotes with double quotes for string values
+        
+      const testCases: TestCase[] = JSON.parse(cleanedJson);
+      
+      // Validate and clean up the test cases
+      return testCases.map(testCase => ({
+        id: testCase.id,
+        description: testCase.description,
+        precondition: testCase.precondition || "System is properly configured",
+        type: testCase.type,
+        expectedResult: testCase.expectedResult,
+        priority: testCase.priority || "medium",
+        requirement: testCase.requirement
+      }));
+    } catch (parseError) {
+      console.error("Error parsing JSON from Gemini response:", parseError);
+      // Fallback to sample generation
+      return generateSampleTestCases(requirements, options);
+    }
   } catch (error) {
     console.error("Error generating test cases with Gemini:", error);
     
