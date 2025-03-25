@@ -225,18 +225,6 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
         }
         onGenerate("file", file, options);
         break;
-        
-      case "gdoc":
-        if (!isGoogleDocConnected) {
-          toast({
-            title: "Connection Required",
-            description: "Please connect to a Google Doc before generating",
-            variant: "destructive"
-          });
-          return;
-        }
-        onGenerate("gdoc", googleDocUrl, options);
-        break;
     }
   };
   
@@ -246,10 +234,9 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
         <h3 className="text-lg font-medium text-slate-800 mb-4">Input Requirements</h3>
         
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as InputType)} className="mb-6">
-          <TabsList className="grid grid-cols-3 mb-6">
+          <TabsList className="grid grid-cols-2 mb-6">
             <TabsTrigger value="text">Text Input</TabsTrigger>
             <TabsTrigger value="file">File Upload</TabsTrigger>
-            <TabsTrigger value="gdoc">Google Doc</TabsTrigger>
           </TabsList>
           
           <TabsContent value="text">
@@ -287,39 +274,7 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
             )}
           </TabsContent>
           
-          <TabsContent value="gdoc">
-            <div className="mb-4">
-              <Label className="block text-sm font-medium text-slate-700 mb-1">Google Doc URL</Label>
-              <div className="flex">
-                <Input 
-                  className="flex-1 rounded-r-none"
-                  placeholder="https://docs.google.com/document/d/..." 
-                  value={googleDocUrl}
-                  onChange={(e) => setGoogleDocUrl(e.target.value)}
-                  disabled={isGoogleDocConnected}
-                />
-                <Button 
-                  variant={isGoogleDocConnected ? "outline" : "default"}
-                  className="rounded-l-none"
-                  onClick={isGoogleDocConnected ? () => setIsGoogleDocConnected(false) : connectGoogleDoc}
-                >
-                  {isGoogleDocConnected ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-              <p className="mt-1 text-xs text-slate-500">Make sure the document is shared with viewing permissions</p>
-            </div>
-            
-            {isGoogleDocConnected && (
-              <div className="mt-4">
-                <GoogleDocPreview 
-                  title={googleDocData.title}
-                  lastUpdated={googleDocData.lastUpdated}
-                  preview={googleDocData.preview}
-                  onDisconnect={() => setIsGoogleDocConnected(false)}
-                />
-              </div>
-            )}
-          </TabsContent>
+
         </Tabs>
         
         <div className="mt-6 border-t border-slate-200 pt-6">
