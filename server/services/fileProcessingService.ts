@@ -9,7 +9,15 @@ const pdfParse = async (pdfBuffer: Buffer) => {
   try {
     // Dynamically import pdf-parse
     const pdfParseModule = await import('pdf-parse');
-    return pdfParseModule.default(pdfBuffer);
+    
+    // Instead of letting pdf-parse use its default process, we'll create a proper options object
+    // that doesn't attempt to load test files
+    return pdfParseModule.default(pdfBuffer, {
+      // Provide minimum necessary options to avoid loading test files
+      pagerender: undefined, // Use default render function
+      max: 0, // Parse all pages
+      version: 'v1.10.100' // Specify a version to avoid version check that might load test files
+    });
   } catch (error) {
     console.error("Error parsing PDF:", error);
     // Return a minimal interface that matches what we need
@@ -48,22 +56,66 @@ export async function processFileUpload(file: Express.Multer.File): Promise<Requ
     
     // Extract text based on file type
     if (fileType === "application/pdf") {
-      // Process PDF file
-      const data = await pdfParse(file.buffer);
-      text = data.text;
+      try {
+        // Process PDF file
+        const data = await pdfParse(file.buffer);
+        text = data.text;
+        
+        // Check if we have valid text content
+        if (!text || text === "Failed to parse PDF content") {
+          console.warn("PDF parsing returned empty or error content, trying fallback extraction");
+          // Create a simple fallback with file name as a requirement
+          return [{
+            id: "R1",
+            text: `Failed to parse PDF content. Please ensure the PDF is not encrypted, password protected, or contains only scanned images.`
+          }];
+        }
+      } catch (pdfError) {
+        console.error("PDF parsing error:", pdfError);
+        // Create a simple fallback with file name as a requirement
+        return [{
+          id: "R1",
+          text: `Failed to parse PDF content: ${pdfError instanceof Error ? pdfError.message : "Unknown error"}`
+        }];
+      }
     } else if (
       fileType === "application/msword" || 
       fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
       // Process DOC or DOCX file
-      const result = await mammoth.extractRawText({ buffer: file.buffer });
-      text = result.value;
+      try {
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
+        text = result.value;
+        
+        if (!text.trim()) {
+          return [{
+            id: "R1",
+            text: `Empty content extracted from document file. Please ensure the document contains text content.`
+          }];
+        }
+      } catch (docError) {
+        console.error("DOC/DOCX parsing error:", docError);
+        return [{
+          id: "R1",
+          text: `Failed to parse document file: ${docError instanceof Error ? docError.message : "Unknown error"}`
+        }];
+      }
     } else {
-      throw new Error("Unsupported file type");
+      throw new Error(`Unsupported file type: ${fileType}. Please upload a PDF, DOC, or DOCX file.`);
     }
     
     // Process the extracted text
-    return await processTextInput(text);
+    const requirements = await processTextInput(text);
+    
+    // If no requirements were extracted, return a helpful message
+    if (!requirements || requirements.length === 0) {
+      return [{
+        id: "R1",
+        text: "No requirements could be extracted from the uploaded file. Please ensure the file contains text content."
+      }];
+    }
+    
+    return requirements;
   } catch (error) {
     console.error("Error processing file:", error);
     throw new Error(`Failed to process file: ${error instanceof Error ? error.message : "Unknown error"}`);
