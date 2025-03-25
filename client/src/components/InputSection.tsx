@@ -2,7 +2,6 @@ import { useState, useRef, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -40,40 +39,6 @@ function FilePreview({ file, onRemove }: FilePreviewProps) {
   );
 }
 
-interface GoogleDocPreviewProps {
-  title: string;
-  lastUpdated: string;
-  preview: string;
-  onDisconnect: () => void;
-}
-
-function GoogleDocPreview({ title, lastUpdated, preview, onDisconnect }: GoogleDocPreviewProps) {
-  return (
-    <div className="p-3 bg-slate-50 rounded-md border border-slate-200">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 mr-2">
-            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
-          <p className="text-sm font-medium text-slate-700">{title}</p>
-        </div>
-        <button 
-          className="text-slate-400 hover:text-rose-500 transition-colors"
-          onClick={onDisconnect}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <p className="text-xs text-slate-500 mb-2">Last updated: {lastUpdated}</p>
-      <div className="text-sm text-slate-600 line-clamp-3">{preview}</div>
-    </div>
-  );
-}
-
 // Format file size to human-readable format
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
@@ -97,15 +62,6 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
   
   // File upload state
   const [file, setFile] = useState<File | null>(null);
-  
-  // Google Doc state
-  const [googleDocUrl, setGoogleDocUrl] = useState("");
-  const [isGoogleDocConnected, setIsGoogleDocConnected] = useState(false);
-  const [googleDocData, setGoogleDocData] = useState({
-    title: "",
-    lastUpdated: "",
-    preview: ""
-  });
   
   // Generation options state
   const [includeEdgeCases, setIncludeEdgeCases] = useState(true);
@@ -150,45 +106,6 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
     },
     maxFiles: 1,
   });
-  
-  // Google Doc connection handling
-  const connectGoogleDoc = () => {
-    if (!googleDocUrl) {
-      toast({
-        title: "URL Required",
-        description: "Please enter a Google Doc URL",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if URL is a valid Google Docs URL
-    const isValidUrl = googleDocUrl.match(/https:\/\/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
-    
-    if (!isValidUrl) {
-      toast({
-        title: "Invalid URL",
-        description: "Please enter a valid Google Doc URL",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // In a real implementation, we would fetch document metadata
-    // For now, we'll simulate connection
-    setIsGoogleDocConnected(true);
-    setGoogleDocData({
-      title: "Feature Requirements Document",
-      lastUpdated: new Date().toLocaleDateString(),
-      preview: "This document contains the requirements for the new feature..."
-    });
-    
-    toast({
-      title: "Connected",
-      description: "Successfully connected to Google Doc",
-      variant: "default"
-    });
-  };
   
   // Handle generate button click
   const handleGenerate = () => {
