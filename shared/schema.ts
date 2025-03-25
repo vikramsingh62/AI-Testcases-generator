@@ -42,8 +42,10 @@ export const requirementSchema = z.object({
 export const testCaseSchema = z.object({
   id: z.string(),
   description: z.string().min(1),
+  precondition: z.string().default(""),
   type: z.enum(["positive", "negative", "edge_case", "performance"]),
   expectedResult: z.string().min(1),
+  priority: z.enum(["high", "medium", "low"]).default("medium"),
   requirement: z.string(),
 });
 

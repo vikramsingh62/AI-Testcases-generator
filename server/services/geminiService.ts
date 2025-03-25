@@ -17,8 +17,10 @@ function generateSampleTestCases(
     testCases.push({
       id: `TC${testCaseCounter++}`,
       description: `Verify that ${requirement.text.toLowerCase()}`,
+      precondition: "System is properly configured and accessible",
       type: "positive",
       expectedResult: `The system successfully implements the requirement: ${requirement.text}`,
+      priority: "high",
       requirement: requirement.id
     });
     
@@ -27,8 +29,10 @@ function generateSampleTestCases(
       testCases.push({
         id: `TC${testCaseCounter++}`,
         description: `Verify system behavior when invalid input is provided for: ${requirement.text.toLowerCase()}`,
+        precondition: "System is in a state ready to accept inputs",
         type: "negative",
         expectedResult: "The system should handle the error gracefully and display an appropriate error message",
+        priority: "medium",
         requirement: requirement.id
       });
     }
@@ -38,8 +42,10 @@ function generateSampleTestCases(
       testCases.push({
         id: `TC${testCaseCounter++}`,
         description: `Test boundary conditions for: ${requirement.text.toLowerCase()}`,
+        precondition: "System is at the limits of its specified operational parameters",
         type: "edge_case",
         expectedResult: "The system should handle edge cases properly without crashing",
+        priority: "medium",
         requirement: requirement.id
       });
     }
@@ -49,8 +55,10 @@ function generateSampleTestCases(
       testCases.push({
         id: `TC${testCaseCounter++}`,
         description: `Measure performance metrics when: ${requirement.text.toLowerCase()}`,
+        precondition: "System is under expected load conditions",
         type: "performance",
         expectedResult: "The operation should complete within acceptable time limits",
+        priority: "low",
         requirement: requirement.id
       });
     }
@@ -108,8 +116,10 @@ Format each test case as a JSON object with the following structure:
 {
   "id": "TC1", // Test Case ID, should be unique
   "description": "Test case description",
+  "precondition": "Conditions that must be true before test execution",
   "type": "positive", // One of: "positive", "negative", "edge_case", "performance"
   "expectedResult": "Expected result description",
+  "priority": "high", // One of: "high", "medium", "low"
   "requirement": "R1" // The requirement ID this test case covers
 }
 
@@ -134,8 +144,10 @@ Return test cases as a JSON array of test case objects.
     return testCases.map(testCase => ({
       id: testCase.id,
       description: testCase.description,
+      precondition: testCase.precondition || "System is properly configured",
       type: testCase.type,
       expectedResult: testCase.expectedResult,
+      priority: testCase.priority || "medium",
       requirement: testCase.requirement
     }));
   } catch (error) {
