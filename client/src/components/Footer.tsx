@@ -122,6 +122,7 @@ export default function Footer() {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className="relative bg-[#0F172A] text-slate-300 mt-16 py-8 overflow-hidden"
+      
     >
       <BackgroundBalls 
         activeSection={activeSection} 
@@ -200,7 +201,7 @@ export default function Footer() {
                 vikram.singh.qa@bluestacks.com
               </a>
             </p>
-            <p className="text-sm text-slate-500 relative z-10">©2023 TestCase Generator</p>
+            <p className="text-sm text-slate-500 relative z-10">©2025 TestCase Generator</p>
           </motion.div>
         </div>
       </div>
