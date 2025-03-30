@@ -4,7 +4,8 @@ export default {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    extend: {
+    extend: 
+    {
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -40,6 +41,36 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+
+          animation: {
+            'gradient-x': 'gradient-x 15s ease infinite',
+            'gradient-y': 'gradient-y 15s ease infinite',
+            'gradient-xy': 'gradient-xy 15s ease infinite',
+            'pulse-soft': 'pulse-soft 10s ease infinite'
+          },
+          keyframes: {
+            'gradient-x': {
+              '0%, 100%': { 'background-position': '0% 50%' },
+              '50%': { 'background-position': '100% 50%' }
+            },
+            'gradient-y': {
+              '0%, 100%': { 'background-position': '50% 0%' },
+              '50%': { 'background-position': '50% 100%' }
+            },
+            'gradient-xy': {
+              '0%, 100%': { 'background-position': '0% 50%' },
+              '25%': { 'background-position': '100% 0%' },
+              '50%': { 'background-position': '100% 100%' },
+              '75%': { 'background-position': '0% 100%' }
+            },
+            'pulse-soft': {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.95' }
+            }
+          },
+          backgroundSize: {
+            '200%': '200% 200%'
+          }
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

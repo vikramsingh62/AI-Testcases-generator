@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import React, { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useDropzone } from "react-dropzone";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,40 +7,40 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { GenerationOptions, InputType } from "@/lib/types";
+import { FileText, X, Upload, Wand2, Zap, BarChart2 } from "lucide-react";
 
-interface FilePreviewProps {
-  file: File;
-  onRemove: () => void;
-}
-
-function FilePreview({ file, onRemove }: FilePreviewProps) {
+// Animated File Preview Component
+function FilePreview({ file, onRemove }: { file: File; onRemove: () => void }) {
   return (
-    <div className="flex items-center p-3 bg-slate-50 rounded-md border border-slate-200">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 mr-2">
-        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-        <polyline points="14 2 14 8 20 8" />
-      </svg>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.3 }}
+      className="flex items-center p-3 bg-slate-50 rounded-lg border border-slate-200 shadow-sm transition-all hover:bg-slate-100"
+    >
+      <FileText className="text-slate-500 mr-3 size-5" />
       <div className="flex-1">
-        <p className="text-sm font-medium text-slate-700">{file.name}</p>
+        <p className="text-sm font-medium text-slate-800">{file.name}</p>
         <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
       </div>
-      <button 
-        className="text-slate-400 hover:text-rose-500 transition-colors"
+      <motion.button 
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="text-slate-400 hover:text-rose-500 transition-colors group"
         onClick={onRemove}
+        aria-label="Remove file"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
+        <X className="size-5 group-hover:rotate-90 transition-transform" />
+      </motion.button>
+    </motion.div>
   );
 }
 
-// Format file size to human-readable format
+// Format file size utility
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -48,27 +49,25 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-interface InputSectionProps {
+export default function InputSection({ onGenerate, isGenerating }: { 
   onGenerate: (inputType: InputType, data: any, options: GenerationOptions) => void;
   isGenerating: boolean;
-}
-
-export default function InputSection({ onGenerate, isGenerating }: InputSectionProps) {
+}) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<InputType>("text");
   
-  // Text input state
+  // State management
   const [requirementsText, setRequirementsText] = useState("");
-  
-  // File upload state
   const [file, setFile] = useState<File | null>(null);
   
   // Generation options state
-  const [includeEdgeCases, setIncludeEdgeCases] = useState(true);
-  const [includeNegativeTests, setIncludeNegativeTests] = useState(true);
-  const [includePerformanceTests, setIncludePerformanceTests] = useState(false);
-  const [outputFormat, setOutputFormat] = useState<"excel" | "csv">("excel");
-  
+  const [options, setOptions] = useState({
+    includeEdgeCases: true,
+    includeNegativeTests: true,
+    includePerformanceTests: false,
+    outputFormat: "excel" as "excel" | "csv"
+  });
+
   // File upload handling
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -78,7 +77,7 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
     
     if (!validTypes.includes(uploadedFile.type)) {
       toast({
-        title: "Invalid file type",
+        title: "Invalid File Type",
         description: "Please upload a PDF, DOC, or DOCX file",
         variant: "destructive"
       });
@@ -87,7 +86,7 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
     
     if (uploadedFile.size > 10 * 1024 * 1024) { // 10MB limit
       toast({
-        title: "File too large",
+        title: "File Size Exceeded",
         description: "Maximum file size is 10MB",
         variant: "destructive"
       });
@@ -109,15 +108,6 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
   
   // Handle generate button click
   const handleGenerate = () => {
-    // Collect generation options
-    const options: GenerationOptions = {
-      includeEdgeCases,
-      includeNegativeTests, 
-      includePerformanceTests,
-      outputFormat
-    };
-    
-    // Determine input type and data
     switch (activeTab) {
       case "text":
         if (!requirementsText.trim()) {
@@ -144,134 +134,224 @@ export default function InputSection({ onGenerate, isGenerating }: InputSectionP
         break;
     }
   };
+
+  // Update option state
+  const updateOption = (key: keyof typeof options, value: boolean | string) => {
+    setOptions(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
   
   return (
-    <Card>
-      <CardContent className="p-6">
-        <h3 className="text-lg font-medium text-slate-800 mb-4">Input Requirements</h3>
-        
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as InputType)} className="mb-6">
-          <TabsList className="grid grid-cols-2 mb-6">
-            <TabsTrigger value="text">Text Input</TabsTrigger>
-            <TabsTrigger value="file">File Upload</TabsTrigger>
-          </TabsList>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-xl mx-auto"
+    >
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader className="bg-slate-50 border-b border-slate-200 py-4">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <CardTitle className="flex items-center text-xl text-slate-800">
+              <Wand2 className="mr-3 text-primary" />
+              Test Case Generation
+            </CardTitle>
+          </motion.div>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(value) => setActiveTab(value as InputType)} 
+            className="w-full"
+          >
+            <TabsList className="grid grid-cols-2 mb-6 bg-slate-100">
+              {["text", "file"].map((tab) => (
+                <TabsTrigger 
+                  key={tab}
+                  value={tab} 
+                  className="data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
+                >
+                  {tab === "text" ? "Text Input" : "File Upload"}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: activeTab === "text" ? -50 : 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: activeTab === "text" ? 50 : -50 }}
+                transition={{ duration: 0.3 }}
+              >
+                {activeTab === "text" ? (
+                  <Textarea 
+                    className="w-full h-64 resize-none border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all" 
+                    placeholder="Paste your feature requirements here. Each requirement should be on a new line or clearly separated."
+                    value={requirementsText}
+                    onChange={(e) => setRequirementsText(e.target.value)}
+                  />
+                ) : (
+                  <>
+                    <motion.div 
+                      {...getRootProps()}
+                      whileHover={{ scale: 1.02 }}
+                      className={`drop-zone w-full h-64 flex flex-col items-center justify-center rounded-lg cursor-pointer border-2 border-dashed transition-all ${
+                        isDragActive 
+                          ? "border-primary bg-primary/10 scale-105" 
+                          : "border-slate-300 hover:border-primary hover:bg-primary/5"
+                      }`}
+                    >
+                      <input {...getInputProps()} />
+                      <motion.div
+                        animate={{ 
+                          scale: [1, 1.1, 1],
+                          rotate: [0, 10, -10, 0]
+                        }}
+                        transition={{
+                          duration: 0.6,
+                          repeat: Infinity,
+                          repeatType: "loop"
+                        }}
+                      >
+                        <Upload className="text-slate-400 mb-4 size-12" />
+                      </motion.div>
+                      <p className="text-slate-600 mb-2 text-center">
+                        {isDragActive 
+                          ? "Drop the file here..." 
+                          : "Drag & drop your files here or click to browse"}
+                      </p>
+                      <p className="text-sm text-slate-500">Supported formats: PDF, DOC, DOCX</p>
+                    </motion.div>
+                    
+                    <AnimatePresence>
+                      {file && (
+                        <div className="mt-4">
+                          <FilePreview file={file} onRemove={() => setFile(null)} />
+                        </div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </Tabs>
           
-          <TabsContent value="text">
-            <Textarea 
-              className="w-full h-64 resize-none" 
-              placeholder="Paste your feature requirements here. Each requirement should be on a new line or clearly separated."
-              value={requirementsText}
-              onChange={(e) => setRequirementsText(e.target.value)}
-            />
-          </TabsContent>
-          
-          <TabsContent value="file">
-            <div 
-              {...getRootProps()} 
-              className={`drop-zone w-full h-64 flex flex-col items-center justify-center rounded-md cursor-pointer border-2 border-dashed ${
-                isDragActive ? "border-primary bg-primary/5" : "border-slate-300"
-              }`}
-            >
-              <input {...getInputProps()} />
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 mb-2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              <p className="text-slate-600 mb-2">
-                {isDragActive ? "Drop the file here..." : "Drag & drop your files here or click to browse"}
-              </p>
-              <p className="text-sm text-slate-500">Supported formats: PDF, DOC, DOCX</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="mt-6 border-t border-slate-200 pt-6"
+          >
+            <h4 className="font-medium text-slate-800 mb-4 flex items-center">
+              <Zap className="mr-2 text-primary" />
+              Generation Options
+            </h4>
+            <div className="space-y-4">
+              {[
+                { 
+                  id: "include-edge-cases", 
+                  label: "Include edge cases", 
+                  icon: <BarChart2 className="mr-2 text-slate-500" />,
+                  checked: options.includeEdgeCases,
+                  onCheckedChange: (checked: boolean) => updateOption('includeEdgeCases', checked)
+                },
+                { 
+                  id: "include-negative-tests", 
+                  label: "Include negative test scenarios", 
+                  icon: <X className="mr-2 text-slate-500" />,
+                  checked: options.includeNegativeTests,
+                  onCheckedChange: (checked: boolean) => updateOption('includeNegativeTests', checked)
+                },
+                { 
+                  id: "include-performance-tests", 
+                  label: "Include performance test considerations", 
+                  icon: <BarChart2 className="mr-2 text-slate-500" />,
+                  checked: options.includePerformanceTests,
+                  onCheckedChange: (checked: boolean) => updateOption('includePerformanceTests', checked)
+                }
+              ].map((option, index) => (
+                <motion.div 
+                  key={option.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * index, duration: 0.3 }}
+                  className="flex items-center space-x-2 hover:bg-slate-50 p-2 rounded-md transition-colors"
+                >
+                  {option.icon}
+                  <Checkbox 
+                    id={option.id} 
+                    checked={option.checked}
+                    onCheckedChange={option.onCheckedChange}
+                  />
+                  <Label htmlFor={option.id} className="text-sm text-slate-700 cursor-pointer">
+                    {option.label}
+                  </Label>
+                </motion.div>
+              ))}
             </div>
             
-            {file && (
-              <div className="mt-4">
-                <FilePreview file={file} onRemove={() => setFile(null)} />
-              </div>
-            )}
-          </TabsContent>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="mt-6"
+            >
+              <Label className="block text-sm font-medium text-slate-700 mb-2">
+                Output Format
+              </Label>
+              <Select 
+                value={options.outputFormat} 
+                onValueChange={(value) => updateOption('outputFormat', value)}
+              >
+                <SelectTrigger className="w-full border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/30">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excel" className="hover:bg-primary/10">
+                    Excel (.xlsx)
+                  </SelectItem>
+                  <SelectItem value="csv" className="hover:bg-primary/10">
+                    CSV
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </motion.div>
+          </motion.div>
           
-
-        </Tabs>
-        
-        <div className="mt-6 border-t border-slate-200 pt-6">
-          <h4 className="font-medium text-slate-800 mb-3">Generation Options</h4>
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <Checkbox 
-                id="include-edge-cases" 
-                checked={includeEdgeCases}
-                onCheckedChange={(checked) => setIncludeEdgeCases(checked as boolean)}
-              />
-              <Label htmlFor="include-edge-cases" className="ml-2 text-sm text-slate-700">
-                Include edge cases
-              </Label>
-            </div>
-            <div className="flex items-center">
-              <Checkbox 
-                id="include-negative-tests" 
-                checked={includeNegativeTests}
-                onCheckedChange={(checked) => setIncludeNegativeTests(checked as boolean)}
-              />
-              <Label htmlFor="include-negative-tests" className="ml-2 text-sm text-slate-700">
-                Include negative test scenarios
-              </Label>
-            </div>
-            <div className="flex items-center">
-              <Checkbox 
-                id="include-performance-tests" 
-                checked={includePerformanceTests}
-                onCheckedChange={(checked) => setIncludePerformanceTests(checked as boolean)}
-              />
-              <Label htmlFor="include-performance-tests" className="ml-2 text-sm text-slate-700">
-                Include performance test considerations
-              </Label>
-            </div>
-          </div>
-          
-          <div className="mt-4">
-            <Label htmlFor="output-format" className="block text-sm font-medium text-slate-700 mb-1">
-              Output Format
-            </Label>
-            <Select value={outputFormat} onValueChange={(value) => setOutputFormat(value as "excel" | "csv")}>
-              <SelectTrigger id="output-format">
-                <SelectValue placeholder="Select format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="excel">Excel (.xlsx)</SelectItem>
-                <SelectItem value="csv">CSV</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <div className="mt-6">
-          <Button 
-            className="w-full py-6 text-base"
-            onClick={handleGenerate}
-            disabled={isGenerating}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="mt-6"
           >
-            {isGenerating ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Generating...
-              </>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                  <path d="M12 9v4" />
-                  <path d="M12 17h.01" />
-                </svg>
-                Generate Test Cases
-              </>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            <Button 
+              className="w-full py-6 text-base group"
+              onClick={handleGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 group-hover:rotate-12 transition-transform" />
+                  Generate Test Cases
+                </>
+              )}
+            </Button>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

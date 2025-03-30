@@ -1,5 +1,29 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Requirement, TestCase, GenerationOptions } from "@shared/schema";
+
+// IMPORTANT SECURITY WARNING: 
+// NEVER expose your actual API key in production code or public repositories
+const GEMINI_API_KEY = 'AIzaSyBhvlo-L1QhgtS65SePh1XShTLFc-RyfoE';
+
+export interface Requirement {
+  id: string;
+  text: string;
+}
+
+export interface GenerationOptions {
+  includeNegativeTests: boolean;
+  includeEdgeCases: boolean;
+  includePerformanceTests: boolean;
+}
+
+export interface TestCase {
+  id: string;
+  description: string;
+  precondition: string;
+  type: 'positive' | 'negative' | 'edge_case' | 'performance';
+  expectedResult: string;
+  priority: 'high' | 'medium' | 'low';
+  requirement: string;
+}
 
 /**
  * Generate sample test cases for development without API key
@@ -69,11 +93,10 @@ function generateSampleTestCases(
 
 // Initialize the Google Generative AI client with API key
 const getGeminiClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
-  if (!apiKey) {
-    throw new Error("Missing Gemini API key. Please set GEMINI_API_KEY environment variable.");
+  if (!GEMINI_API_KEY) {
+    throw new Error("Missing Gemini API key.");
   }
-  return new GoogleGenerativeAI(apiKey);
+  return new GoogleGenerativeAI(GEMINI_API_KEY);
 };
 
 /**
@@ -85,7 +108,7 @@ export async function generateTestCases(
 ): Promise<TestCase[]> {
   try {
     // Check if API key is available, if not use sample data
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+    if (!GEMINI_API_KEY) {
       console.log("Missing Gemini API key - Using demonstration content for development");
       return generateSampleTestCases(requirements, options);
     }
@@ -103,6 +126,7 @@ export async function generateTestCases(
     let prompt = `Generate comprehensive test cases for the following requirements:\n\n${formattedRequirements}\n\n`;
     
     // Add option-specific instructions
+    prompt += "Generate a diverse set of test cases that thoroughly cover the requirements.\n";
     prompt += "Include test cases that verify the basic functionality (positive test cases).\n";
     
     if (options.includeNegativeTests) {
@@ -119,20 +143,18 @@ export async function generateTestCases(
     
     // Format instructions
     prompt += `
-Format each test case as a JSON object with the following structure:
-{
-  "id": "TC1", // Test Case ID, should be unique
-  "description": "Test case description",
-  "precondition": "Conditions that must be true before test execution",
-  "type": "positive", // One of: "positive", "negative", "edge_case", "performance"
-  "expectedResult": "Expected result description",
-  "priority": "high", // One of: "high", "medium", "low"
-  "requirement": "R1" // The requirement ID this test case covers
-}
+Provide test cases in a strict JSON array format with each test case having these properties:
+- id: Unique test case identifier (string)
+- description: Detailed test case description (string)
+- precondition: Setup conditions before test (string)
+- type: Test case type ("positive", "negative", "edge_case", or "performance")
+- expectedResult: What should happen when the test is run (string)
+- priority: Importance of the test ("high", "medium", or "low")
+- requirement: ID of the requirement this test case covers (string)
 
-Return test cases as a JSON array of test case objects.
+Return ONLY a valid JSON array of test case objects.
 `;
-
+    
     // Generate the test cases
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -150,7 +172,6 @@ Return test cases as a JSON array of test case objects.
       const jsonText = jsonMatch[0];
       
       // Additional cleaning to handle common JSON errors
-      // Remove trailing commas
       const cleanedJson = jsonText
         .replace(/,\s*\}/g, '}')  // Remove trailing commas in objects
         .replace(/,\s*\]/g, ']')  // Remove trailing commas in arrays
@@ -161,10 +182,10 @@ Return test cases as a JSON array of test case objects.
       
       // Validate and clean up the test cases
       return testCases.map(testCase => ({
-        id: testCase.id,
+        id: testCase.id || `TC${Math.floor(Math.random() * 1000)}`,
         description: testCase.description,
         precondition: testCase.precondition || "System is properly configured",
-        type: testCase.type,
+        type: testCase.type || "positive",
         expectedResult: testCase.expectedResult,
         priority: testCase.priority || "medium",
         requirement: testCase.requirement
@@ -176,14 +197,31 @@ Return test cases as a JSON array of test case objects.
     }
   } catch (error) {
     console.error("Error generating test cases with Gemini:", error);
-    
-    // When API key is not available, use a structured approach to generate sample test cases
-    if ((error as Error).message?.includes("Missing Gemini API key")) {
-      console.log("Missing Gemini API key - Using demonstration content for development");
-      // Generate some sample test cases covering the different types requested by the options
-      return generateSampleTestCases(requirements, options);
-    }
-    
     throw new Error(`Failed to generate test cases: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
+
+// Example usage function
+export async function runTestCaseGeneration() {
+  const requirements: Requirement[] = [
+    { id: 'R1', text: 'User should be able to log in with valid credentials' },
+    { id: 'R2', text: 'System must validate input fields before submission' }
+  ];
+
+  const options: GenerationOptions = {
+    includeNegativeTests: true,
+    includeEdgeCases: true,
+    includePerformanceTests: false
+  };
+
+  try {
+    const testCases = await generateTestCases(requirements, options);
+    console.log("Generated Test Cases:", testCases);
+    return testCases;
+  } catch (error) {
+    console.error("Test Case Generation Failed:", error);
+  }
+}
+
+// Uncomment to run directly
+// runTestCaseGeneration();
