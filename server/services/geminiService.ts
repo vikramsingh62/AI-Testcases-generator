@@ -115,7 +115,7 @@ export async function generateTestCases(
     
     const genAI = getGeminiClient();
     // Update to use the correct model version
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "Gemini 2.5 Pro Experimental" });
     
     // Format the requirements as a numbered list for the prompt
     const formattedRequirements = requirements
@@ -143,7 +143,7 @@ export async function generateTestCases(
     
     // Format instructions
     prompt += `
-Provide test cases in a strict JSON array format with each test case having these properties:
+Provide test cases in a strict JSON array format with each test case having these properties and try to generate as much test cases you can with the given requiremnts:
 - id: Unique test case identifier (string)
 - description: Detailed test case description (string)
 - precondition: Setup conditions before test (string)
