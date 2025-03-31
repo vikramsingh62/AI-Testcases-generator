@@ -115,7 +115,7 @@ export async function generateTestCases(
     
     const genAI = getGeminiClient();
     // Update to use the correct model version
-    const model = genAI.getGenerativeModel({ model: "Gemini 2.5 Pro Experimental" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     
     // Format the requirements as a numbered list for the prompt
     const formattedRequirements = requirements
