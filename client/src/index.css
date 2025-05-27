@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: hsl(200, 100%, 90%);
+  }
+
   * {
     @apply border-border;
   }
