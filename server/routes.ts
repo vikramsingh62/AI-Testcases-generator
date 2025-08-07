@@ -151,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { requirements, testCases, format, title = 'Test Cases' } = req.body;
       
       if (!requirements || !Array.isArray(requirements)) {
-        return res.status(400).json({ error: 'Requirements are required and must be an array' });
+        return res.status(400).json({ error: 'Requirements are required and must be an array format to decode sucessfully' });
       }
       
       if (!testCases || !Array.isArray(testCases)) {
